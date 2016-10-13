@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">SimpleNoteBook</string>
+    <string name="add_note">Add note</string>
 </resources>
