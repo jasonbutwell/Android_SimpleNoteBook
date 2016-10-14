@@ -23,18 +23,24 @@ public class MainActivity extends AppCompatActivity {
 
     // array list for the notes
     private ArrayList<String> notes;
+    private ArrayList<String> noteTitles;
 
     private ArrayAdapter arrayAdapter;
 
     // shared preferences object
     SharedPreferences sharedPreferences;
 
+    // values for shortening the title
+    private int maxTitleLength = 36;
+    private String shortenedTitlePostfix = "...";
+
     // used to delete a note entry
     private void deleteEntry( int pos ) {
 
         // Check there is something to remove before attempting to remove it.
-        if ( notes.get(pos) != null ) {
-            notes.remove(pos);                      // remove element
+        if ( notes.get(pos) != null && noteTitles.get(pos) != null ) {
+            notes.remove(pos);                      // remove element from the notes array
+            noteTitles.remove(pos);                 // remove the title too
             arrayAdapter.notifyDataSetChanged();    // notify the adapter's data has been changed
             saveData();                             // save the data
         }
@@ -107,8 +113,10 @@ public class MainActivity extends AppCompatActivity {
             // sets note to the preference we obtained. the index is used as the key
 
             // if the last note was not "" (empty string) then add it to the array list
-            if ( note != "")
-                notes.add( note );
+            if ( note != "") {
+                notes.add(note);    // add the preference to the notes array
+                noteTitles.add(getTitleFromNote(note)); // add a shortened version as a title to the note title array
+            }
         }
     }
 
@@ -121,7 +129,9 @@ public class MainActivity extends AppCompatActivity {
         sharedPreferences = this.getSharedPreferences("com.jasonbutwell.simplenotebook", Context.MODE_PRIVATE);
 
         notes = new ArrayList<String>();
-        arrayAdapter = new ArrayAdapter(this, android.R.layout.simple_list_item_1, notes);
+        noteTitles = new ArrayList<String>();
+
+        arrayAdapter = new ArrayAdapter(this, android.R.layout.simple_list_item_1, noteTitles);
 
         loadData(); // load data from shared preferences
 
@@ -158,7 +168,7 @@ public class MainActivity extends AppCompatActivity {
 
                 //Log.i("pos",""+pos);
 
-                return true;
+                return true;    // consumes the click
             }
         });
 
@@ -198,7 +208,7 @@ public class MainActivity extends AppCompatActivity {
 
             startActivityForResult(intent, EditTextIntentRequestCode);
 
-            return true;
+            return true;    // consumes the click
         }
 
         return super.onOptionsItemSelected(item);
@@ -206,11 +216,26 @@ public class MainActivity extends AppCompatActivity {
 
     // Called as a call back to get the results from our intent we called
 
+    private String getTitleFromNote( String note ) {
+        String title = new String( note );  // create a new string based on the note
+
+        // check the length to see if it does exceed the maximum amount of chars we can show
+        if ( title.length() > maxTitleLength-shortenedTitlePostfix.length() ) {
+
+            // modifty the title accordingly
+            title = title.substring(0,(maxTitleLength-shortenedTitlePostfix.length())).concat(shortenedTitlePostfix);
+        }
+
+        return title;   // pass back the title - if the length was okay, then the title will be the same as the actual note
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         // Check which request we're responding to
         // Make sure the request was successful
         if (requestCode == EditTextIntentRequestCode && resultCode == RESULT_OK && data != null) {
+
+            String title = "";
 
             // Grab the data we got back from the Intent and display it to the Log
             String returnString = data.getStringExtra("notes");
@@ -223,11 +248,15 @@ public class MainActivity extends AppCompatActivity {
 
             if ( returnString != null && returnString.length() > 0 ) {
                 // if index location is -1 then we are adding and not amending
-                if ( indexLocation == -1 )
-                    notes.add( returnString );  // just append to end of array list
+                if ( indexLocation == -1 ) {
+
+                    notes.add(returnString);  // just append to end of array list
+                    noteTitles.add(getTitleFromNote(returnString));
+                }
                 else {
                     // if there is an index we update that entry to amend the item in the list
                     notes.set(indexLocation, returnString);
+                    noteTitles.set(indexLocation, getTitleFromNote(returnString));
                 }
                 // Notify to the adapter that our list has been changed
                 arrayAdapter.notifyDataSetChanged();
