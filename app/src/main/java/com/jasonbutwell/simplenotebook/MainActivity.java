@@ -1,9 +1,11 @@
 package com.jasonbutwell.simplenotebook;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -26,6 +28,51 @@ public class MainActivity extends AppCompatActivity {
 
     // shared preferences object
     SharedPreferences sharedPreferences;
+
+    // used to delete a note entry
+    private void deleteEntry( int pos ) {
+
+        // Check there is something to remove before attempting to remove it.
+        if ( notes.get(pos) != null ) {
+            notes.remove(pos);                      // remove element
+            arrayAdapter.notifyDataSetChanged();    // notify the adapter's data has been changed
+            saveData();                             // save the data
+        }
+    }
+
+    // Alert Dialog that gets called when a long press occurs
+
+    private void doAlert( int pos) {
+
+        final int position = pos;   // store the location of the element within the list that was long pressed on
+
+        // build the dialog
+        AlertDialog alertDialog = new AlertDialog.Builder(this).create();
+
+        // set title and message
+        alertDialog.setTitle("Caution: You are about to delete this entry!");
+        alertDialog.setMessage("Are you absolutely sure that you want to do this?");
+
+        // set up what happens when we select no (nothing)
+        alertDialog.setButton(AlertDialog.BUTTON_NEGATIVE, "NO",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                    }
+                });
+
+        // set up what happens when we select yes ( deleteEntry() is called )
+        alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, "YES",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        deleteEntry( position );
+                        dialog.dismiss();
+                    }
+                });
+
+        // show the dialog to the user
+        alertDialog.show();
+    }
 
     // save the data to shared preferences
     private void saveData() {
@@ -107,12 +154,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean onItemLongClick(AdapterView<?> arg0, View arg1, int pos, long id) {
 
-                // Check there is something to remove before attempting to remove it.
-                if ( notes.get(pos) != null ) {
-                    notes.remove(pos);                      // remove element
-                    arrayAdapter.notifyDataSetChanged();    // notify the adapter's data has been changed
-                    saveData();                             // save the data
-                }
+                doAlert(pos);
 
                 //Log.i("pos",""+pos);
 
